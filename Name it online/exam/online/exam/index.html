@@ -1,0 +1,111 @@
+<!-- online/exam/index.html -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Exam — Fullscreen</title>
+  <style>
+    body{font-family:Arial,margin:0;background:#f7f9fb;display:flex;align-items:center;justify-content:center;height:100vh}
+    #wrap{width:95%;max-width:900px;background:#fff;padding:20px;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.08)}
+    .q{margin:18px 0}
+    button{padding:10px 14px;border:none;border-radius:6px;cursor:pointer;background:#007bff;color:#fff}
+    #startBtn{display:block;margin:0 auto}
+    #status{color:#c0392b;font-weight:600}
+  </style>
+</head>
+<body>
+  <div id="wrap">
+    <h1>Exam</h1>
+    <div id="before">
+      <p>Press Start to enter fullscreen and begin the exam. Do not exit fullscreen or switch tabs.</p>
+      <button id="startBtn">Start Exam</button>
+      <p id="status"></p>
+    </div>
+
+    <form id="examForm" style="display:none">
+      <div class="q">
+        <label>1) What does HTML stand for?</label><br>
+        <label><input type="radio" name="q1" value="a"> Hyper Text Markup Language</label><br>
+        <label><input type="radio" name="q1" value="b"> HighText Machine Language</label><br>
+        <label><input type="radio" name="q1" value="c"> Hyperlinks and Text Markup Language</label>
+      </div>
+
+      <div class="q">
+        <label>2) 2 + 2 = ?</label><br>
+        <label><input type="radio" name="q2" value="a"> 3</label><br>
+        <label><input type="radio" name="q2" value="b"> 4</label><br>
+        <label><input type="radio" name="q2" value="c"> 5</label>
+      </div>
+
+      <div style="text-align:right">
+        <button type="button" id="submitBtn">Submit</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    const startBtn = document.getElementById('startBtn');
+    const examForm = document.getElementById('examForm');
+    const before = document.getElementById('before');
+    const status = document.getElementById('status');
+    const submitBtn = document.getElementById('submitBtn');
+
+    // Start exam: must be triggered by user click to allow fullscreen
+    startBtn.addEventListener('click', async () => {
+      try {
+        status.textContent = '';
+        await document.documentElement.requestFullscreen();
+      } catch (e) {
+        status.textContent = 'Failed to enter fullscreen. Try pressing F11 or use a different browser.';
+        return;
+      }
+      before.style.display = 'none';
+      examForm.style.display = 'block';
+      monitorRestrictions();
+    });
+
+    // Monitor leaving fullscreen or switching tabs
+    function monitorRestrictions() {
+      document.addEventListener('fullscreenchange', () => {
+        if (!document.fullscreenElement) {
+          endExam('You exited fullscreen. Exam ended.');
+        }
+      });
+
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+          endExam('You switched tabs or minimized. Exam ended.');
+        }
+      });
+
+      window.addEventListener('blur', () => {
+        // extra catch for focus loss
+        endExam('Window lost focus. Exam ended.');
+      });
+    }
+
+    // End the exam with a message and lock the page
+    function endExam(msg) {
+      try { document.exitFullscreen(); } catch (e) {}
+      examForm.style.display = 'none';
+      before.style.display = 'block';
+      status.textContent = msg;
+      // optionally disable buttons
+      startBtn.disabled = true;
+    }
+
+    // Simple scoring and submit
+    submitBtn.addEventListener('click', () => {
+      const answers = { q1: 'a', q2: 'b' };
+      let score = 0;
+      Object.keys(answers).forEach(k => {
+        const el = document.querySelector(`input[name="${k}"]:checked`);
+        if (el && el.value === answers[k]) score++;
+      });
+      alert('You scored ' + score + '/' + Object.keys(answers).length);
+      endExam('Exam submitted.');
+    });
+  </script>
+</body>
+</html>
